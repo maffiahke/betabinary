@@ -1,0 +1,29 @@
+import { Navbar } from "@/components/Navbar";
+import { TickerMarquee } from "@/components/TickerMarquee";
+import { LiveChartPreview } from "@/components/LiveChartPreview";
+import { Hero } from "@/components/landing/Hero";
+import { Features } from "@/components/landing/Features";
+import { Steps } from "@/components/landing/Steps";
+import { Stats } from "@/components/landing/Stats";
+import { Reviews } from "@/components/landing/Reviews";
+import { Cta } from "@/components/landing/Cta";
+
+import { Footer } from "@/components/Footer";
+
+export default function Home() {
+  return (
+    <div className="bg-gradient-to-b from-[#070b17] via-[#0b1428] to-[#0f1b3d] text-white min-h-screen-safe overflow-x-hidden transition-colors duration-300">
+      <Navbar />
+      <Hero />
+      <TickerMarquee />
+      <LiveChartPreview />
+      <Features />
+      <Steps />
+      <Stats />
+      <Reviews />
+      <Cta />
+
+      <Footer />
+    </div>
+  );
+}
