@@ -6,7 +6,7 @@ import { ChevronLeft, Users, ExternalLink, Link2, AlertTriangle } from "lucide-r
 
 type StakeMode = "exact" | "percentage" | "fixed";
 
-const MIN_BALANCE_REQUIRED = 300;
+const MIN_BALANCE_REQUIRED = 50;
 
 export default function CopyTradingPage() {
   const router = useRouter();
@@ -25,7 +25,7 @@ export default function CopyTradingPage() {
   }, []);
 
   const meetsMinimum = balance !== null && balance >= MIN_BALANCE_REQUIRED;
-  const amountKes = (MIN_BALANCE_REQUIRED * 130).toLocaleString();
+  const amountKes = (MIN_BALANCE_REQUIRED * 50).toLocaleString();
 
   const handleConnect = () => {
     setError("");
