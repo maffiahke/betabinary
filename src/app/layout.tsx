@@ -28,18 +28,17 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.className} antialiased`}>
         <SessionProvider>{children}</SessionProvider>
-         <Script id="brevo-conversations" strategy="afterInteractive">
-          {`(function(d, w, c) {
-            w.BrevoConversationsID = '6a74132a87a3e584d5098f06';
-            w[c] = w[c] || function() {
-              (w[c].q = w[c].q || []).push(arguments);
-            };
-            var s = d.createElement('script');
-            s.async = true;
-            s.src = 'https://conversations-widget.brevo.com/brevo-conversations.js';
-            if (d.head) d.head.appendChild(s);
-          })(document, window, 'BrevoConversations');`}
-        </Script>
+         <script type="text/javascript">
+var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
+(function(){
+var s1=document.createElement("script"),s0=document.getElementsByTagName("script")[0];
+s1.async=true;
+s1.src='https://embed.tawk.to/6a84487fbc557a344a5e27ab/default';
+s1.charset='UTF-8';
+s1.setAttribute('crossorigin','*');
+s0.parentNode.insertBefore(s1,s0);
+})();
+</script>
    </body>
     </html>
   );
