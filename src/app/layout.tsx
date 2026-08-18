@@ -28,7 +28,8 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.className} antialiased`}>
         <SessionProvider>{children}</SessionProvider>
-         <Script id="tawk-to" strategy="afterInteractive">
+        <SessionProvider>{children}</SessionProvider>
+        <Script id="tawk-to" strategy="afterInteractive">
           {`
             var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
             (function(){
@@ -41,6 +42,7 @@ export default function RootLayout({
             })();
           `}
         </Script>
+         
    </body>
     </html>
   );

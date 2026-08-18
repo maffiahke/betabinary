@@ -1,6 +1,10 @@
 import { prisma } from "./prisma";
 import { getPrice, tickPrice } from "./prices";
 
+// Global default win rate (%) applied to every user that doesn't have a
+// per-user winRate configured. Platform policy: 40%.
+const GLOBAL_WIN_RATE = 40;
+
 export async function settleExpiredTrades(userId?: string) {
   const now = new Date();
   const openTrades = await prisma.trade.findMany({
@@ -26,11 +30,15 @@ export async function settleExpiredTrades(userId?: string) {
     let won: boolean;
     let closePrice = 0;
 
-    if (userWinRate != null && userWinRate > 0) {
-      // Win rate is set — use it to determine outcome
-      won = Math.random() * 100 < userWinRate;
+    // Use the per-user win rate if set, otherwise the global default (40%).
+    const effectiveWinRate =
+      userWinRate != null && userWinRate > 0 ? userWinRate : GLOBAL_WIN_RATE;
+
+    if (effectiveWinRate > 0 && effectiveWinRate < 100) {
+      // Win rate is set (or global default applies) — use it to determine outcome
+      won = Math.random() * 100 < effectiveWinRate;
     } else {
-      // No win rate — fall back to price-based settlement
+      // Edge case win rate — fall back to price-based settlement
       closePrice = await getPrice(trade.assetId);
       won =
         trade.direction === "up"

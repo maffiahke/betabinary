@@ -47,3 +47,6 @@ next-env.d.ts
 # scraped reference files
 tagoption-*.html
 tagoption-ke-snippet.txt
+
+.vercel
+.env*.local
