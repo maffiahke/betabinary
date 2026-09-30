@@ -87,7 +87,11 @@ body {
     font-size: 16px !important;
   }
 }
-/* Add these to your existing src/app/globals.css */
+/* Keep the Tawk.to chat bubble clear of the fixed bottom trading nav
+   (fallback in case Tawk_API.onLoad runs before the widget mounts) */
+iframe[src*="tawk.to"] {
+  bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
+}
 
 @keyframes slideDown {
   from {
