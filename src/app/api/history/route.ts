@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { describeContract } from "@/lib/contracts";
 
 export async function GET(req: Request) {
   const session = await auth();
@@ -32,7 +33,7 @@ export async function GET(req: Request) {
   const tradeItems = trades.map((t) => ({
     kind: "trade" as const,
     id: t.id,
-    label: `${t.contractType.split("|")[0]} — ${t.assetName}`,
+      label: describeContract(t.contractType, t.direction),
     amount: t.profit ?? 0,
     status: t.status,
     date: t.settledAt ?? t.createdAt,

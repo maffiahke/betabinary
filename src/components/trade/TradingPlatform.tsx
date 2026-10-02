@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { DepositModal } from "../payments/DepositModal";
 import { ASSETS, type Asset } from "@/lib/assets";
+import { describeContract } from "@/lib/contracts";
 import { PositionsPanel, type Position, type PositionsTab } from "./PositionsPanel";
 import { OrderPanel, type ContractType } from "./OrderPanel";
 
@@ -52,7 +53,7 @@ function mapApiTrade(t: {
   return {
     id: t.id,
     asset: t.assetName,
-    type: t.contractType,
+    type: describeContract(t.contractType, t.direction),
     direction: t.direction as "up" | "down",
     stake: t.stake,
     payout: t.payout,

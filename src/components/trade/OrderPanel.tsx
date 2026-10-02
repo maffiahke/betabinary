@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Minus, Plus, Square, Zap, XCircle, CheckCircle2 } from "lucide-react";
 import type { Asset } from "@/lib/assets";
+import { CONTRACT_TYPES, DEFAULT_DIGIT, contractSides, payoutPercentFor } from "@/lib/contracts";
 
-const CONTRACT_TYPES = ["Even/Odd", "Over/Under", "Match/Differ"] as const;
 const STAKE_PRESETS = [5, 10, 25, 50, 100];
 const MIN_STAKE = 5;
 
@@ -124,7 +124,7 @@ export function OrderPanel({
   compact = false,
 }: OrderPanelProps) {
   const [tradeMode, setTradeMode] = useState<"auto" | "manual">("auto");
-  const [selectedDigit, setSelectedDigit] = useState(5);
+    const [selectedDigit, setSelectedDigit] = useState(DEFAULT_DIGIT);
 
   // Apply a digit recommended by the AI Entry Scanner whenever a new signal arrives
   useEffect(() => {
@@ -371,12 +371,9 @@ export function OrderPanel({
   };
 
   const getLabels = (): [string, string] => {
-    switch (contractType) {
-      case "Even/Odd":     return ["Even", "Odd"];
-      case "Over/Under":   return ["Over", "Under"];
-      case "Match/Differ": return ["Match", "Differ"];
-    }
-  };
+      const [up, down] = contractSides(contractType);
+      return [up, down];
+    };
 
   const getColors = (): [string, string] => {
     switch (contractType) {
@@ -387,18 +384,12 @@ export function OrderPanel({
   };
 
   const getPayoutSplit = (): { upPct: number; downPct: number } => {
-    switch (contractType) {
-      case "Match/Differ": return { upPct: 850, downPct: 5 };
-      case "Even/Odd":     return { upPct: 95, downPct: 95 };
-      case "Over/Under": {
-        const overChance = (9 - selectedDigit) / 9 || 0.01;
-        const underChance = (selectedDigit + 1) / 9 || 0.01;
-        return {
-          upPct: Math.min(950, Math.round((1 / overChance) * 95 * 10) / 10),
-          downPct: Math.min(950, Math.round((1 / underChance) * 95 * 10) / 10),
-        };
-      }
-    }
+    // Sourced from the shared settlement schedule so the percentage on the
+    // button is the percentage that actually pays out.
+    return {
+      upPct: payoutPercentFor(contractType, upLabel, selectedDigit),
+      downPct: payoutPercentFor(contractType, downLabel, selectedDigit),
+    };
   };
 
   const adjustStake = (delta: number) => {

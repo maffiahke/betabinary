@@ -5,8 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getAsset } from "@/lib/assets";
 import { tickPrice } from "@/lib/prices";
 import { settleAndFetchTrades } from "@/lib/trades";
-
-const CONTRACT_TYPES = ["Even/Odd", "Over/Under", "Match/Differ"] as const;
+import { CONTRACT_TYPES, payoutPercentFor } from "@/lib/contracts";
 
 const placeSchema = z.object({
   assetId: z.string(),
@@ -70,33 +69,41 @@ export async function POST(req: Request) {
     const openPrice = await tickPrice(assetId);
     const expiresAt = new Date(Date.now() + durationSeconds * 1000);
 
-    // Store digit-contract metadata inside contractType string if no dedicated
-    // columns exist yet, e.g. "Even/Odd:Even:6" — falls back gracefully if
-    // your schema doesn't have separate digit/digitDirection columns.
-    const enrichedContractType =
-      digit !== undefined && digitDirection
-        ? `${contractType}|${digitDirection}|${digit}`
-        : contractType;
+        // Enriched string keeps the digit metadata in a single field so history
+        // can display it; legacy rows without a pipe still resolve via parseContract.
+        const enrichedContractType =
+          digit !== undefined && digitDirection
+            ? `${contractType}|${digitDirection}|${digit}`
+            : contractType;
 
-    const [, trade] = await prisma.$transaction([
-      prisma.user.update({
-        where: { id: session.user.id },
-        data: { balance: { decrement: stake } },
-      }),
-      prisma.trade.create({
-        data: {
-          userId: session.user.id,
-          assetId,
-          assetName: asset.name,
-          contractType: enrichedContractType,
-          direction,
-          stake,
-          payout: asset.payout,
-          openPrice,
-          expiresAt,
-        },
-      }),
-    ]);
+        // The row's `payout` column is the true settlement figure for digit
+        // contracts — the same number the trade panel quotes. Storing it here
+        // means history and admin read the same figure instead of the asset's
+        // headline percentage.
+        const storedPayout =
+          digit !== undefined && digitDirection
+            ? payoutPercentFor(contractType, digitDirection, digit)
+            : asset.payout;
+
+        const [, trade] = await prisma.$transaction([
+          prisma.user.update({
+            where: { id: session.user.id },
+            data: { balance: { decrement: stake } },
+          }),
+          prisma.trade.create({
+            data: {
+              userId: session.user.id,
+              assetId,
+              assetName: asset.name,
+              contractType: enrichedContractType,
+              direction,
+              stake,
+              payout: storedPayout,
+              openPrice,
+              expiresAt,
+            },
+          }),
+        ]);
 
     const updatedUser = await prisma.user.findUnique({
       where: { id: session.user.id },

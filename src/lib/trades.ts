@@ -1,5 +1,10 @@
 import { prisma } from "./prisma";
 import { getPrice, tickPrice } from "./prices";
+import {
+  parseContract,
+  payoutPercentFor,
+  skewedWinProbability,
+} from "./contracts";
 
 // Global default win rate (%) applied to every user that doesn't have a
 // per-user winRate configured. Platform policy: 40%.
@@ -29,24 +34,46 @@ export async function settleExpiredTrades(userId?: string) {
     const userWinRate = winRateMap.get(trade.userId);
     let won: boolean;
     let closePrice = 0;
+      // Percent of stake paid on a win. Defaults to the row's stored payout so
+      // any contract this file doesn't recognise still settles as it used to.
+      let payoutPercent = trade.payout;
 
-    // Use the per-user win rate if set, otherwise the global default (40%).
-    const effectiveWinRate =
-      userWinRate != null && userWinRate > 0 ? userWinRate : GLOBAL_WIN_RATE;
+      // Use the per-user win rate if set, otherwise the global default (40%).
+      const effectiveWinRate =
+        userWinRate != null && userWinRate > 0 ? userWinRate : GLOBAL_WIN_RATE;
 
-    if (effectiveWinRate > 0 && effectiveWinRate < 100) {
-      // Win rate is set (or global default applies) — use it to determine outcome
-      won = Math.random() * 100 < effectiveWinRate;
-    } else {
-      // Edge case win rate — fall back to price-based settlement
-      closePrice = await getPrice(trade.assetId);
-      won =
-        trade.direction === "up"
-          ? closePrice > trade.openPrice
-          : closePrice < trade.openPrice;
-    }
+      const contract = parseContract(trade.contractType, trade.direction);
 
-    const profit = won ? trade.stake * (trade.payout / 100) : -trade.stake;
+      if (contract) {
+        // Digit contracts (Even/Odd, Over/Under, Match/Differ) settle on their
+        // own real odds rather than a flat coin flip. A Differ is ~9-in-10 and a
+        // Match ~1-in-10, so flipping the same boolean for both meant Differ
+        // lost constantly while Match paid the same 95% as everything else.
+        // The configured win rate now skews each side's true probability, and
+        // the payout comes from the same schedule the trade panel quotes.
+        payoutPercent = payoutPercentFor(contract.contractType, contract.side, contract.digit);
+        won =
+          Math.random() * 100 <
+          skewedWinProbability(
+            contract.contractType,
+            contract.side,
+            contract.digit,
+            effectiveWinRate
+          ) * 100;
+      } else if (effectiveWinRate > 0 && effectiveWinRate < 100) {
+        // Non-digit contract — win rate is set (or global default applies), so
+        // use it to determine outcome against the trade's stored payout.
+        won = Math.random() * 100 < effectiveWinRate;
+      } else {
+        // Edge case win rate — fall back to price-based settlement
+        closePrice = await getPrice(trade.assetId);
+        won =
+          trade.direction === "up"
+            ? closePrice > trade.openPrice
+            : closePrice < trade.openPrice;
+      }
+
+      const profit = won ? trade.stake * (payoutPercent / 100) : -trade.stake;
 
     // Claim this trade atomically before doing anything else. updateMany
     // with `status: "open"` in the WHERE clause means only the first caller
